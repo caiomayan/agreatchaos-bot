@@ -472,7 +472,7 @@ async def comando_valorant_stats(interaction: discord.Interaction, name: str, ta
         await interaction.response.send_message("API KEY FOR VALORANT STATS NOT CONFIGURED", ephemeral=True)
         return
 
-    await interaction.response.defer(ephemeral=False)
+    await interaction.response.defer(ephemeral=True, thinking=True)
 
     name_api = name.replace(' ', '')
     tag_api = tag
@@ -516,7 +516,7 @@ async def comando_valorant_stats(interaction: discord.Interaction, name: str, ta
         else:
             embed.set_footer(text="IMAGE RANK NOT AVAILABLE")
 
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     except ValoAPIException as e:
         error_message = f"VALORANT API ERROR: {str(e)}"
