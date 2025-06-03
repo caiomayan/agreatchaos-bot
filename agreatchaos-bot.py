@@ -66,9 +66,7 @@ async def on_ready():
 
     bot_identity_line = f'{bot.user.name} $ {bot.user.id}' #type: ignore
 
-    print(bot_identity_line)
-    print()
-    print('SUCCESS')
+    print(f'{bot_identity_line} SUCCESS')
 
     await asyncio.sleep(2)
 
@@ -77,26 +75,20 @@ async def on_ready():
             os.system('cls')
         else:
             os.system('clear')
-        print(bot_identity_line)
-        print()
-        print('SYNCING COMMANDS')
+        print(f'{bot_identity_line} SYNCING COMMANDS')
         guild_object = discord.Object(id=SERVER_ID) #type: ignore
         synced = await bot.tree.sync(guild=guild_object)
         if os.name == 'nt':
             os.system('cls')
         else:
             os.system('clear')
-        print(bot_identity_line)
-        print()
-        print(f'SYNCED {len(synced)} COMMANDS TO SERVER {SERVER_ID}')
+        print(f'{bot_identity_line} SYNCED {len(synced)} COMMANDS TO SERVER {SERVER_ID}')
     except Exception as e:
         if os.name == 'nt':
             os.system('cls')
         else:
             os.system('clear')
-        print(bot_identity_line)
-        print()
-        print(f'ERROR SYNCING COMMANDS: {e}')
+        print(f'{bot_identity_line} ERROR SYNCING COMMANDS: {e}')
 
     await asyncio.sleep(2)
 
@@ -106,13 +98,17 @@ async def on_ready():
         os.system('clear')
 
     print(bot_identity_line)
-    print()
+
     try:
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            os.system('clear')
         activity = discord.Activity(type=discord.ActivityType.listening, name="A Great Chaos")
         await bot.change_presence(status=discord.Status.online, activity=activity)
-        print(f'RICH PRESENCE SET TO {activity.name}')
+        print(f'{bot_identity_line} RICH PRESENCE SET TO {activity.name}')
     except Exception as e:
-        print(f'ERROR RICH PRESENCE: {e}')
+        print(f'{bot_identity_line} ERROR RICH PRESENCE: {e}')
 
     await asyncio.sleep(1)
 
@@ -378,6 +374,78 @@ async def on_send_file_error(interaction: discord.Interaction, error: app_comman
             await interaction.followup.send('COMMAND FILE NOT PROCESSED, FAIL', ephemeral=True)
         print(f'$ ERROR COMMAND /send_file OR PROCESSOR: {error}')
 
+# /serverinfo command
+@bot.tree.command(
+    name="serverinfo",
+    description="SHOW SERVER DETAILS",
+    guild=discord.Object(id=SERVER_ID)
+)
+async def command_serverinfo(interaction: discord.Interaction):
+    guild = interaction.guild
+
+    if guild is None: # Adicionado um check extra, embora improvável para guild-specific command
+        await interaction.response.send_message("THIS COMMAND CAN ONLY BE USED IN A SERVER", ephemeral=True)
+        return
+
+    embed = discord.Embed(
+        title=f"SERVER INFORMATION",
+        description=f"DETAILS ABOUT **{guild.name.upper()}**:",
+        color=discord.Color.from_rgb(0, 0, 0)
+    )
+
+    if guild.icon:
+        embed.set_thumbnail(url=guild.icon.url)
+
+    embed.add_field(name="SERVER NAME", value=guild.name, inline=True)
+    embed.add_field(name="SERVER ID", value=str(guild.id), inline=True)
+    
+    owner = guild.owner
+    if owner:
+        embed.add_field(name="OWNER", value=f"{owner.mention} ({owner.display_name})", inline=True)
+    else:
+        embed.add_field(name="OWNER ID", value=str(guild.owner_id), inline=True)
+
+    embed.add_field(name="CREATION DATE", value=f"<t:{int(guild.created_at.timestamp())}:D> (<t:{int(guild.created_at.timestamp())}:R>)", inline=False)
+    embed.add_field(name="TOTAL MEMBERS", value=str(guild.member_count), inline=True)
+    
+    embed.add_field(name="TEXT CHANNELS", value=str(len(guild.text_channels)), inline=True)
+    embed.add_field(name="VOICE CHANNELS", value=str(len(guild.voice_channels)), inline=True)
+    embed.add_field(name="CATEGORIES", value=str(len(guild.categories)), inline=True)
+    embed.add_field(name="ROLES", value=str(len(guild.roles) -1), inline=True) 
+
+    embed.add_field(name="BOOST LEVEL", value=f"LEVEL {guild.premium_tier}", inline=True)
+    embed.add_field(name="BOOSTS COUNT", value=str(guild.premium_subscription_count), inline=True)
+    
+    verification_level_map = {
+        discord.VerificationLevel.none: "NONE",
+        discord.VerificationLevel.low: "LOW (VERIFIED EMAIL)",
+        discord.VerificationLevel.medium: "MEDIUM (REGISTERED ON DISCORD >5 MIN)",
+        discord.VerificationLevel.high: "HIGH (MEMBER OF SERVER >10 MIN)",
+        discord.VerificationLevel.highest: "HIGHEST (VERIFIED PHONE)"
+    }
+    embed.add_field(name="VERIFICATION LEVEL", value=verification_level_map.get(guild.verification_level, str(guild.verification_level).upper()), inline=False)
+
+    if guild.description:
+        embed.add_field(name="SERVER DESCRIPTION", value=guild.description, inline=False)
+
+    if guild.vanity_url_code:
+        embed.add_field(name="VANITY URL", value=f"discord.gg/{guild.vanity_url_code}", inline=False)
+    
+    features_str = ""
+    if guild.features:
+        features_list = [feature.replace("_", " ").upper() for feature in guild.features]
+        if features_list:
+            features_str = ", ".join(features_list)
+    
+    if features_str: # Só adiciona o campo se houver features formatadas
+        embed.add_field(name="SERVER FEATURES", value=features_str if len(features_str) <= 1024 else features_str[:1020] + "...", inline=False)
+
+
+    embed.set_footer(text=f"REQUESTED BY: {interaction.user.display_name.upper()}", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+    embed.timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 # /valorant_stats command
 
 @bot.tree.command(
@@ -436,7 +504,7 @@ async def comando_valorant_stats(interaction: discord.Interaction, name: str, ta
         
         embed = discord.Embed(
             title=f'VALORANT RANK TO {name_jogador_api}#{tag_jogador_api} ({region.upper()})',
-            color=discord.Color.red()
+            color=discord.Color.from_rgb(0, 0, 0)
         )
         embed.add_field(name="RANK NOW", value=rank_now, inline=True)
         embed.add_field(name="ELO (Rank Points)", value=str(elo), inline=True)
@@ -485,5 +553,107 @@ async def on_valorant_stats_error(interaction: discord.Interaction, error: app_c
         else:
             await interaction.followup.send('ERROR COMMAND /valorant_stats OR PROCESSOR', ephemeral=True)
         print(f'$ ERROR PROCESSING COMMAND /valorant_stats: {error}')
+
+# /userinfo command
+
+@bot.tree.command(
+    name="userinfo",
+    description="SHOWS INFORMATION ABOUT A SERVER MEMBER.",
+    guild=discord.Object(id=SERVER_ID)
+)
+@app_commands.describe(
+    membro="THE MEMBER YOU WANT TO GET INFO ABOUT."
+)
+async def comando_userinfo(interaction: discord.Interaction, membro: discord.Member):
+    embed = discord.Embed(
+        title=f"USER INFORMATION: {membro.display_name.upper()}",
+        color=membro.color if membro.color != discord.Color.default() else discord.Color.blue()
+    )
+    if membro.display_avatar:
+        embed.set_thumbnail(url=membro.display_avatar.url)
+
+    if membro.discriminator == "0":
+        username_field = f"USERNAME: @{membro.name}"
+    else:
+        username_field = f"USERNAME: {membro.name}#{membro.discriminator}"
+    
+    embed.add_field(name="USER TAG", value=str(membro), inline=True)
+    embed.add_field(name="NICKNAME", value=membro.nick if membro.nick else "NONE", inline=True)
+    embed.add_field(name="USER ID", value=str(membro.id), inline=True)
+
+    embed.add_field(name="ACCOUNT CREATED", value=f"<t:{int(membro.created_at.timestamp())}:D> (<t:{int(membro.created_at.timestamp())}:R>)", inline=False)
+    if membro.joined_at:
+        embed.add_field(name="JOINED SERVER", value=f"<t:{int(membro.joined_at.timestamp())}:D> (<t:{int(membro.joined_at.timestamp())}:R>)", inline=False)
+
+    roles = [role.mention for role in reversed(membro.roles) if not role.is_default()]
+    
+    if roles:
+        roles_display_limit = 7
+        roles_str = ", ".join(roles[:roles_display_limit])
+        if len(roles) > roles_display_limit:
+            roles_str += f" AND {len(roles) - roles_display_limit} MORE..."
+        embed.add_field(name=f"ROLES ({len(roles)})", value=roles_str if roles_str else "NO SPECIFIC ROLES", inline=False)
+    else:
+        embed.add_field(name="ROLES", value="NO SPECIFIC ROLES", inline=False)
+
+    if membro.top_role and not membro.top_role.is_default():
+        embed.add_field(name="HIGHEST ROLE", value=membro.top_role.mention, inline=True)
+    else:
+        embed.add_field(name="HIGHEST ROLE", value="NONE", inline=True)
+    
+    status_map = {
+        discord.Status.online: "ONLINE",
+        discord.Status.idle: "IDLE",
+        discord.Status.dnd: "DO NOT DISTURB",
+        discord.Status.offline: "OFFLINE / INVISIBLE"
+    }
+    embed.add_field(name="STATUS", value=status_map.get(membro.status, str(membro.status).upper()), inline=True)
+
+    if membro.activity:
+        activity = membro.activity
+        activity_type_str = ""
+        activity_details = ""
+
+        if activity.type == discord.ActivityType.playing:
+            activity_type_str = "PLAYING"
+            activity_details = activity.name
+        elif activity.type == discord.ActivityType.streaming:
+            activity_type_str = "STREAMING"
+            activity_details = f"[{activity.name}]({activity.url})" #type: ignore
+        elif activity.type == discord.ActivityType.listening:
+            if isinstance(activity, discord.Spotify):
+                activity_type_str = "LISTENING TO SPOTIFY"
+                activity_details = f"{activity.title} BY {activity.artist}"
+            else:
+                activity_type_str = "LISTENING TO"
+                activity_details = activity.name
+        elif activity.type == discord.ActivityType.watching:
+            activity_type_str = "WATCHING"
+            activity_details = activity.name
+        elif isinstance(activity, discord.CustomActivity):
+             activity_type_str = "CUSTOM STATUS"
+             activity_details = f"{activity.emoji if activity.emoji else ''} {activity.name if activity.name else ''}".strip()
+             if not activity_details: activity_details = "NONE"
+        
+        if activity_type_str and activity_details:
+             embed.add_field(name=f"ACTIVITY ({activity_type_str})", value=activity_details, inline=False)
+
+    embed.set_footer(text=f"REQUESTED BY: {interaction.user.display_name.upper()}", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+    embed.timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@comando_userinfo.error
+async def on_userinfo_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.TransformerError) or isinstance(error, app_commands.CommandInvokeError):
+        error_message = "COULD NOT FETCH INFO FOR THIS USER OR AN UNEXPECTED ERROR OCCURRED."
+    else:
+        error_message = "AN ERROR OCCURRED WHILE PROCESSING THE COMMAND."
+
+    print(f"$ ERROR ON COMMAND /userinfo: {error}")
+    if not interaction.response.is_done():
+        await interaction.response.send_message(error_message, ephemeral=True)
+    else:
+        await interaction.followup.send(error_message, ephemeral=True)
 
 bot.run(TOKEN)
