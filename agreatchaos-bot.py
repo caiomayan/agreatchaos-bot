@@ -1,5 +1,6 @@
 # A Great Chaos
 
+import sys
 import os
 import discord
 from discord.ext import commands
@@ -655,5 +656,75 @@ async def on_userinfo_error(interaction: discord.Interaction, error: app_command
         await interaction.response.send_message(error_message, ephemeral=True)
     else:
         await interaction.followup.send(error_message, ephemeral=True)
+
+# /about command
+
+@bot.tree.command(
+    name="about",
+    description="SHOWS INFORMATION ABOUT THIS BOT.",
+    guild=discord.Object(id=SERVER_ID)
+)
+async def comando_about(interaction: discord.Interaction):
+    uptime_string = "UPTIME NOT AVAILABLE YET"
+    if hasattr(bot, 'start_time') and bot.start_time: #type: ignore
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        duration = now_utc - bot.start_time #type: ignore
+
+        total_seconds = int(duration.total_seconds())
+
+        days = total_seconds // (24 * 3600)
+        remanescent_seconds_after_days = total_seconds % (24 * 3600)
+        hours = remanescent_seconds_after_days // 3600
+        remanescent_seconds_after_hours = remanescent_seconds_after_days % 3600
+        minutes = remanescent_seconds_after_hours // 60
+        seconds = remanescent_seconds_after_hours % 60
+
+        parts_uptime = []
+        if days > 0:
+            parts_uptime.append(f"{days} DAY{'S' if days != 1 else ''}")
+        if hours > 0:
+            parts_uptime.append(f"{hours} HOUR{'S' if hours != 1 else ''}")
+        if minutes > 0:
+            parts_uptime.append(f"{minutes} MINUTE{'S' if minutes != 1 else ''}")
+        
+        if not parts_uptime and seconds >= 0 : 
+            parts_uptime.append(f"{seconds} SECOND{'S' if seconds != 1 else ''}")
+        elif seconds > 0 : 
+            parts_uptime.append(f"{seconds} SECOND{'S' if seconds != 1 else ''}")
+
+        if not parts_uptime:
+            uptime_string = "ONLINE FOR A FEW MOMENTS"
+        elif len(parts_uptime) == 1:
+            uptime_string = parts_uptime[0]
+        else:
+            last_part = parts_uptime.pop()
+            uptime_string = ", ".join(parts_uptime) + f" AND {last_part}"
+    else:
+        uptime_string = "START TIME NOT RECORDED"
+
+    embed = discord.Embed(
+        title=f"ABOUT {bot.user.name}", #type: ignore
+        description=f"$ {bot.user.name}", #type: ignore
+        color=discord.Color.from_rgb(0, 0, 0)
+    )
+
+    if bot.user.display_avatar: #type: ignore
+        embed.set_thumbnail(url=bot.user.display_avatar.url) #type: ignore
+
+    embed.add_field(name="BOT TAG", value=str(bot.user), inline=True)
+    embed.add_field(name="BOT ID", value=str(bot.user.id), inline=True) #type: ignore
+    embed.add_field(name="DEVELOPER", value="tensai", inline=True)
+
+    embed.add_field(name="PYTHON VERSION", value=sys.version.split(' ')[0], inline=True) #type: ignore
+    embed.add_field(name="DISCORD.PY VERSION", value=discord.__version__, inline=True)
+    embed.add_field(name="UPTIME", value=uptime_string, inline=True)
+
+    embed.add_field(name="SERVER COUNT", value=str(len(bot.guilds)), inline=True)
+    embed.add_field(name="LATENCY", value=f"{round(bot.latency * 1000)}MS", inline=True)
+    
+    embed.set_footer(text=f"REQUESTED BY: {interaction.user.display_name.upper()}", icon_url=interaction.user.display_avatar.url if interaction.user.display_avatar else None)
+    embed.timestamp = datetime.datetime.now(datetime.timezone.utc)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 bot.run(TOKEN)
