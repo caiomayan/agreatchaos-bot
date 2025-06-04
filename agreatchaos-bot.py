@@ -100,16 +100,16 @@ async def on_ready():
 
     print(bot_identity_line)
 
-    try:
-        if os.name == 'nt':
-            os.system('cls')
-        else:
-            os.system('clear')
-        activity = discord.Activity(type=discord.ActivityType.listening, name="A Great Chaos")
-        await bot.change_presence(status=discord.Status.online, activity=activity)
-        print(f'{bot_identity_line} RICH PRESENCE SET TO {activity.name}')
-    except Exception as e:
-        print(f'{bot_identity_line} ERROR RICH PRESENCE: {e}')
+    # try:
+    #     if os.name == 'nt':
+    #         os.system('cls')
+    #     else:
+    #         os.system('clear')
+    #     activity = discord.Activity(type=discord.ActivityType.listening, name="A Great Chaos")
+    #     await bot.change_presence(status=discord.Status.online, activity=activity)
+    #     print(f'{bot_identity_line} RICH PRESENCE SET TO {activity.name}')
+    # except Exception as e:
+    #     print(f'{bot_identity_line} ERROR RICH PRESENCE: {e}')
 
     await asyncio.sleep(1)
 
